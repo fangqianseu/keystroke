@@ -45,7 +45,7 @@ class GMM:
         self.model_name = 'GMM'
 
         # self.model = GaussianMixture(n_components=16, max_iter=1000, covariance_type='diag', n_init=3)
-        self.model = GaussianMixture(n_components=10, max_iter=1000, covariance_type='diag', n_init=1)
+        self.model = GaussianMixture(n_components=6, max_iter=1000, covariance_type='diag', n_init=3)
 
     def train(self, feature):
         np.seterr(all='ignore')

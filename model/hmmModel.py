@@ -7,12 +7,13 @@ class HmmModel:
     hmm 模型的训练接口
     '''
 
-    def __init__(self):
-        self.name = 'hmm'
+    def __init__(self, model_name='GaussianHMM'):
+        self.name = 'hmm' + ' ' + model_name
+        self.model_name = model_name
         self.hmm_models = []
 
     def train(self, label, features):
-        hmm_trainer = HMM()
+        hmm_trainer = HMM(model_name=self.model_name)
 
         feature = np.asarray(features[0])
         for iterm in features[1:]:
@@ -51,8 +52,12 @@ class HMM(object):
         self.cov_type = cov_type
         self.n_iter = n_iter
 
-        self.model = hmm.GaussianHMM(n_components=self.n_components,
-                                     covariance_type=self.cov_type, n_iter=self.n_iter,tol=1e-3)
+        if model_name == 'GaussianHMM':
+            self.model = hmm.GaussianHMM(n_components=self.n_components,
+                                         covariance_type=self.cov_type, n_iter=self.n_iter, tol=1e-3)
+        else:
+            self.model = hmm.GMMHMM(n_components=self.n_components,
+                                    covariance_type=self.cov_type, n_iter=self.n_iter, tol=1e-3)
 
     def train(self, feature):
         np.seterr(all='ignore')

@@ -11,8 +11,8 @@ class ModelsTrainer:
     '''
 
     def __init__(self):
-        # self.models = [GmmModel(), HmmModel(),SvmModel()]
-        self.models = [GmmModel(), HmmModel()]
+        self.models = [GmmModel(), HmmModel(model_name='GaussianHMM'), SvmModel()]
+        # self.models = [GmmModel(), HmmModel()]
         self.labels = []
         self.features = []
 

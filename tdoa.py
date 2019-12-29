@@ -3,10 +3,11 @@ from final.tool import *
 import math
 
 
-def gcc_phat(sig, refsig, fs=1, max_tau=None, interp=16):
+def gcc_phat(sig, refsig, fs=48000, max_tau=None, interp=16):
     '''
     This function computes the offset between the signal sig and the reference signal refsig
     using the Generalized Cross Correlation - Phase Transform (GCC-PHAT)method.
+    基于 gcc-path 的 多通道 时延计算方法
     '''
 
     # make sure the length for the FFT is larger or equal than len(sig) + len(refsig)
@@ -50,9 +51,48 @@ def get_tdoa(datas, rate):
     return tau
 
 
+# DTW 算法...
+def dtw(M1, M2):
+    # 初始化数组 大小为 M1 * M2
+    M1_len = len(M1)
+    M2_len = len(M2)
+    cost = [[0 for i in range(M2_len)] for i in range(M1_len)]
+
+    # 初始化 dis 数组
+    dis = []
+    for i in range(M1_len):
+        dis_row = []
+        for j in range(M2_len):
+            dis_row.append(distance(M1[i], M2[j]))
+        dis.append(dis_row)
+
+    # 初始化 cost 的第 0 行和第 0 列
+    cost[0][0] = dis[0][0]
+    for i in range(1, M1_len):
+        cost[i][0] = cost[i - 1][0] + dis[i][0]
+    for j in range(1, M2_len):
+        cost[0][j] = cost[0][j - 1] + dis[0][j]
+
+    # 开始动态规划
+    for i in range(1, M1_len):
+        for j in range(1, M2_len):
+            cost[i][j] = min(cost[i - 1][j] + dis[i][j] * 1,
+                             cost[i - 1][j - 1] + dis[i][j] * 2,
+                             cost[i][j - 1] + dis[i][j] * 1)
+    return cost[M1_len - 1][M2_len - 1]
+
+
+# 两个维数相等的向量之间的距离
+def distance(x1, x2):
+    sum = 0
+    for i in range(len(x1)):
+        sum = sum + abs(x1[i] - x2[i])
+    return sum
+
+
 if __name__ == '__main__':
     fs, far = read_sign('../audio/alexa-01.wav')
-    fs, near = read_sign('../audio/alexa-02.wav')
+    _, near = read_sign('../audio/alexa-02.wav')
 
     # max_tau = 0.14 / 340
     # audio_length = len(far)
@@ -68,8 +108,10 @@ if __name__ == '__main__':
     #     tau, cc = gcc_phat(sig, refsig, fs, max_tau)
     #     print(tau)
     # window = np.hanning(len(far))
-    window = 1
-    sig = near * window
-    refsig = far * window
+    sig = near[:2000]
+    refsig = far[:2000]
     tau, cc = gcc_phat(sig, refsig, fs=fs)
     print(tau)
+
+    dtw_ = dtw(sig, refsig)
+    print(dtw_)

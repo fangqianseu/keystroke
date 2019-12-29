@@ -4,6 +4,9 @@ import python_speech_features
 from python_speech_features import mfcc, delta
 import numpy as np
 from sklearn import preprocessing
+from sklearn.decomposition import PCA
+
+from final.tool import *
 
 
 def get_mfcc(recording, sample_rate, winlen=0.025, numcep=13, nfilt=26, appendEnergy=True, winfunc=np.hanning):
@@ -32,7 +35,7 @@ def get_delta(mfccfeature, n=1):
     return deltafeature
 
 
-def get_fbank(recording, sample_rate, winlen=0.025, numcep=13, nfilt=26):
+def get_log_fbank(recording, sample_rate, winlen=0.025, numcep=13, nfilt=26):
     frame_length = math.ceil(winlen * sample_rate)
     fback, energy = python_speech_features.fbank(recording, samplerate=sample_rate, nfft=frame_length,
                                                  winfunc=np.hanning)
@@ -43,14 +46,15 @@ def combine_features(datas, rate):
     mfcc_feature = get_mfcc(datas, rate)
     mfcc_feature = preprocessing.scale(mfcc_feature)
 
-    # fbank, energy = get_fbank(datas, rate)
-
+    mfcc_grad = np.gradient(mfcc_feature, axis=0)
     delta = get_delta(mfcc_feature, 2)
     ddelta = get_delta(delta, 2)
 
-    fft = get_fft(datas, rate)
+    fbank, energy = get_log_fbank(datas, rate)
+    fbank = np.log(fbank)[:, 0:mfcc_feature.shape[1]]
+    fbank = preprocessing.scale(fbank)
 
-    features = np.hstack((mfcc_feature, delta, ddelta))
+    features = np.hstack((mfcc_feature, delta, ddelta, mfcc_grad, fbank))
     return features
 
 
@@ -148,3 +152,11 @@ def mfcc_extractor(xx, sr, win_len=0.025, shift_len=0.01, mel_channel=26, dct_ch
         mfcc = np.row_stack((mfcc[:, 4:frames - 4], dtm[:, 4:frames - 4], ddtm[:, 4:frames - 4]))
 
     return mfcc, spectrum
+
+
+if __name__ == '__main__':
+    path = '/Users/qian/taogroup/data/e-3.wav'
+    rate, datas = read_sign(path)
+
+    data = datas[:, 0]
+    plot_figure(combine_features(data, rate))

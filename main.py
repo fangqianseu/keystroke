@@ -1,7 +1,6 @@
 import os
 
 from sklearn.metrics import classification_report
-import pickle
 
 from final.tool import *
 from final.endpointDetection import EndPointDetect
@@ -50,15 +49,6 @@ def test_feature(datas, rate):
     return features
 
 
-def dump_object(path, object):
-    with open(path, 'wb') as dump_file:
-        pickle.dump(object, dump_file)
-
-
-def load_object(path):
-    return pickle.load(open(path, 'rb'))
-
-
 def save_data():
     print("collect features ------------")
     # 存储数据
@@ -75,17 +65,29 @@ def save_data():
 
         tag = dirname
 
-        for file_name in os.listdir(base_dir):
+        for file_name in os.listdir(base_dir)[::2][:20]:
             file_path = os.path.join(base_dir, file_name)
 
             rate, datas = read_sign(file_path)
 
             pre_datas = test_preProcess(datas, rate)
             # tdoa = test_tdoa(pre_datas, rate)
-            cut_datas = main_signals_cut(pre_datas, rate)
-            feature = test_feature(cut_datas, rate)
 
+            cut_datas = main_signals_cut(pre_datas, rate)
+            feature = None
+
+            try:
+                feature = test_feature(cut_datas, rate)
+            except Exception:
+                pass
+            if feature is None:
+                continue
+
+            if feature.shape[0] < 6:
+                continue
             print(feature.shape)
+
+            # matshow_figure(feature.T, file_name)
 
             X.append(feature)
             Y.append(label)
@@ -102,24 +104,7 @@ def save_data():
     dump_object(tags_path, tags)
 
 
-if __name__ == '__main__':
-    # path = '/Users/qian/taogroup/data/0-10.wav'
-    # path = '/Users/qian/taogroup/data/0-10two.wav'
-    # path = '/Users/qian/taogroup/data/e-3.wav'
-    # rate, datas = tool.Tool.read_sign(path)
-    # datas = test_preProcess(datas, rate)
-    # final_datas = test_endDetrction(datas)
-
-    # base_path = '/Users/qian/taogroup/data/test/datebace'
-    # base_path = '/Users/qian/taogroup/data/test/datebace1'
-    base_path = '/Users/qian/taogroup/data/test/v20'
-    features_path = 'data/features.dump'
-    Y_path = 'data/Y.dump'
-    labels_path = 'data/labels.dump'
-    tags_path = 'data/tags.dump'
-
-    save_data()
-
+def do_predict():
     X = load_object(features_path)
     Y = load_object(Y_path)
     labels = load_object(labels_path)
@@ -139,13 +124,12 @@ if __name__ == '__main__':
         modelsTrainer.collect_features(label, feature)
 
     print("train ------------")
-
     modelsTrainer.train()
-
     print("predict -------------")
 
     predicts_one = {}
     predicts_three = {}
+
     for i, _ in enumerate(x_test):
         feature = x_test[i]
         real_label = y_test[i]
@@ -158,9 +142,11 @@ if __name__ == '__main__':
 
             predicts_one[model].append(predict[0])
 
-            if model in ['hmm', 'gmm']:
+            # top-3 准确率 统计
+            if model[:3] in ['hmm', 'gmm']:
                 if model not in predicts_three.keys():
                     predicts_three[model] = []
+
                 if real_label in predict:
                     predicts_three[model].append(real_label)
                 else:
@@ -175,3 +161,65 @@ if __name__ == '__main__':
     for name, predicts in predicts_three.items():
         print('@@@@@', name)
         print(classification_report(y_test, predicts, labels=labels, target_names=tags))
+
+
+def show_differences():
+    global base_path
+
+    X = load_object(features_path)
+    Y = load_object(Y_path)
+
+    print('total:', len(X))
+
+    box = {}
+    features = None
+
+    for i in range(len(X)):
+        label = Y[i]
+        feature = X[i]
+
+        feature = convent2_row(feature)
+
+        if label not in box.keys():
+            box[label] = [feature]
+        else:
+            box[label].append(feature)
+
+        if features is None:
+            features = np.asarray((feature))
+        else:
+            features = np.vstack([features, feature])
+
+    # 余弦相似度
+    r2 = cosine_distance(features, features)
+    heat_figure(r2)
+
+    # 向量距离
+    distances = np.zeros((len(X), len(X)))
+    i = 0
+    for label1, features1 in box.items():
+        for feature1 in features1:
+            j = 0
+            for label2, features2 in box.items():
+                for feature2 in features2:
+                    p = points_distance(feature1, feature2)
+                    distances[i][j] = p
+                    j += 1
+            i += 1
+    heat_figure(data_stander(distances))
+    print()
+
+
+if __name__ == '__main__':
+    # base_path = '/Users/qian/taogroup/data/test/datebace'
+    base_path = '/Users/qian/taogroup/data/test/v20'
+    features_path = 'data/features.dump'
+    Y_path = 'data/Y.dump'
+    labels_path = 'data/labels.dump'
+    tags_path = 'data/tags.dump'
+
+    # save_data()
+
+    # do_predict()
+
+    # show_differences()

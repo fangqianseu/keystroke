@@ -1,6 +1,12 @@
+import pickle
+
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
 import numpy as np
+from scipy.spatial.distance import pdist
+from sklearn import preprocessing
+from sklearn.metrics.pairwise import cosine_similarity
+import seaborn as sns
 
 
 def read_sign(path):
@@ -22,12 +28,34 @@ def main_signals_cut(datas, rate):
 
 
 def convent2_line(feature):
-    sign = []
-    row, line = feature.shape
-    for j in range(line):
-        for i in range(row):
-            sign.append(feature[i, j])
-    return np.array(sign)
+    return np.array(feature).reshape(-1, 1)
+
+
+def convent2_row(feature):
+    return np.array(feature).reshape(1, -1)
+
+
+def dump_object(path, object):
+    with open(path, 'wb') as dump_file:
+        pickle.dump(object, dump_file)
+
+
+def load_object(path):
+    return pickle.load(open(path, 'rb'))
+
+
+def cosine_distance(data1, data2):
+    return cosine_similarity(data1, data2)
+
+
+def points_distance(data1, data2, metric='euclidean'):
+    d2 = pdist(np.vstack([data1, data2]), metric)
+    return d2
+
+
+def data_stander(data):
+    min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
+    return min_max_scaler.fit_transform(data)
 
 
 def np_array(data):
@@ -64,4 +92,15 @@ def plot_figure(data, title=''):
 def matshow_figure(data, title=''):
     plt.matshow(data)
     plt.title(title)
+    plt.show()
+
+
+def imshow_figure(data, title=''):
+    plt.imshow(data)
+    plt.title(title)
+    plt.show()
+
+
+def heat_figure(data):
+    sns.heatmap(data, cmap='GnBu', )
     plt.show()
