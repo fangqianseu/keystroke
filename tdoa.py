@@ -36,15 +36,15 @@ def gcc_phat(sig, refsig, fs=48000, max_tau=None, interp=16):
 
 
 def get_tdoa(datas, rate):
-    toda_datas = main_signals_cut(datas, rate)
+    # toda_datas = main_signals_cut(datas, rate)
     # show_figure(toda_datas, "cut data")
 
-    data1 = np_array(toda_datas[:, 0])
-    data2 = np_array(toda_datas[:, 1])
+    data1 = np_array(datas[:, 0])
+    data2 = np_array(datas[:, 1])
 
     audio_length = len(data1)
-    window = np.hanning(audio_length)
-    # window = 1
+    # window = np.hanning(audio_length)
+    window = 1
 
     tau, cc = gcc_phat(data1 * window, data2 * window, fs=rate)
 

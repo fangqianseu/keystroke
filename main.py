@@ -37,7 +37,6 @@ def test_endDetrction(pre_data):
 
 def test_tdoa(datas, rate):
     tau = get_tdoa(datas, rate)
-
     return tau
 
 
@@ -65,17 +64,16 @@ def save_data():
 
         tag = dirname
 
-        for file_name in os.listdir(base_dir)[::2][:20]:
+        for file_name in os.listdir(base_dir):
             file_path = os.path.join(base_dir, file_name)
 
             rate, datas = read_sign(file_path)
 
             pre_datas = test_preProcess(datas, rate)
-            # tdoa = test_tdoa(pre_datas, rate)
-
+            tdoa = test_tdoa(pre_datas, rate)
+            print(tdoa)
             cut_datas = main_signals_cut(pre_datas, rate)
             feature = None
-
             try:
                 feature = test_feature(cut_datas, rate)
             except Exception:
@@ -220,6 +218,6 @@ if __name__ == '__main__':
 
     # save_data()
 
-    # do_predict()
+    do_predict()
 
     # show_differences()

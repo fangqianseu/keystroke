@@ -23,7 +23,7 @@ def main_signals_cut(datas, rate):
     begin = max(0, int(index - rate * 0.003))
     end = min(len(data), int(index + rate * 0.03))
 
-    print(index, begin, end, len(datas[:, 0]))
+    # print(index, begin, end, len(datas[:, 0]))
     return np.array(datas[begin:end, :])
 
 
